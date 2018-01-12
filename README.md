@@ -16,6 +16,9 @@ Prerequisites:
 
 cloudtools can be installed from the Python package index using the pip installer: `pip install cloudtools`
 
+NOTE: this can also be run using Docker as follows:
+`docker run -it --rm -v "$HOME"/.config:/.config nealelab/cloudtools cluster <command>`
+
 ## Usage
 
 All functionality in cloudtools is accessed through the `cluster` module.
