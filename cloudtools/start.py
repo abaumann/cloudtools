@@ -1,5 +1,7 @@
 from subprocess import call, check_output
 import googleapiclient.discovery
+import time
+import sys
 
 COMPATIBILITY_VERSION = 3
 
@@ -73,10 +75,10 @@ def init_parser(parser):
     parser.add_argument('--vep', action='store_true', help='Configure the cluster to run VEP.')
     
     # gcloud overrides
-    default_project = check_output(['gcloud', 'config', 'get-value', 'core/project'])
+    default_project = check_output(['gcloud', 'config', 'get-value', 'core/project']).rstrip()
     parser.add_argument('--project', default=default_project, help='Google project to override the default specified by gcloud.')
 
-    default_region = check_output(['gcloud', 'config', 'get-value', 'compute/region'])
+    default_region = check_output(['gcloud', 'config', 'get-value', 'compute/region']).rstrip()
     parser.add_argument('--region', default=default_region, help='Google region to override the default specified by gcloud.')
 
 def main(args):
@@ -181,9 +183,7 @@ def main(args):
                   'https://www.googleapis.com/auth/userinfo.email'
                 ],
                 "zoneUri": args.zone,
-                "metadata": {
-                  
-                }
+                "metadata": {}
             },
             "masterConfig": {
                 "numInstances": 1,
@@ -198,19 +198,26 @@ def main(args):
                 "diskConfig": {
                     "bootDiskSizeGb": args.worker_boot_disk_size,
                     "numLocalSsds": args.num_worker_local_ssds,
-                },
-                #TODO : need to deal with preemptibles
-                #"isPreemptible": "true" if worker_preemptible else "false"
+                }
             },
             "softwareConfig": {
                 "imageVersion": image_version,
                 "properties": {
                 }
             },
-            "initializationActions": [
-            ]
+            "initializationActions": []
         }
     }
+    
+    if args.num_preemptible_workers or args.preemptible_worker_boot_disk_size:
+        cluster_data['config']['secondaryWorkerConfig'] = {
+                "numInstances": args.num_preemptible_workers,
+                "machineTypeUri": args.worker_machine_type,
+                "diskConfig": {
+                    "bootDiskSizeGb": args.preemptible_worker_boot_disk_size,
+                    "numLocalSsds": args.num_worker_local_ssds,
+                },
+            }
     
     # add required metadata to the config json
     metadata_json = cluster_data['config']['gceClusterConfig']['metadata']
@@ -232,7 +239,9 @@ def main(args):
     
     # convert the properties format to a dict that can be pushed into the cluster json
     properties_json = cluster_data['config']['softwareConfig']['properties']
-    for k,v in dict(s.split('=') for s in properties).iteritems():
+    # note we join the properties and then split because properties before this point is a mix
+    # of a list of individual properties and the comma separated string that comes in from args
+    for k,v in dict(s.split('=') for s in ",".join(properties).split(",")).iteritems():
         properties_json[k] = v
     
     # add each initialization action to the cluster json
@@ -240,24 +249,29 @@ def main(args):
         action = {"executableFile": i}
         cluster_data['config']['initializationActions'].append(action)
     
-    
     dataproc = googleapiclient.discovery.build('dataproc', 'v1')
     result = dataproc.projects().regions().clusters().create(
         projectId=args.project,
         region=args.region,
         body=cluster_data).execute()
-    print('Waiting for cluster creation...')
+    sys.stdout.write('\nWaiting for cluster creation...')
+    sys.stdout.flush()
 
     while True:
         result = dataproc.projects().regions().clusters().list(
-            projectId=project_id,
-            region=region).execute()
+            projectId=args.project,
+            region=args.region).execute()
         cluster_list = result['clusters']
         cluster = [c
                    for c in cluster_list
-                   if c['clusterName'] == cluster_name][0]
+                   if c['clusterName'] == args.name][0]
         if cluster['status']['state'] == 'ERROR':
             raise Exception(result['status']['details'])
-        if cluster['status']['state'] == 'RUNNING':
-            print("Cluster created.")
+        elif cluster['status']['state'] == 'RUNNING':
+            print("\nCluster created (see https://console.cloud.google.com/dataproc/clusters/{}?project={}&region={})".format(args.name, args.project, args.region))
             break
+        else:
+            time.sleep(5)
+            sys.stdout.write('...')
+            sys.stdout.flush()
+        
