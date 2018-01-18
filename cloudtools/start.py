@@ -249,6 +249,7 @@ def main(args):
         action = {"executableFile": i}
         cluster_data['config']['initializationActions'].append(action)
     
+    
     dataproc = googleapiclient.discovery.build('dataproc', 'v1')
     result = dataproc.projects().regions().clusters().create(
         projectId=args.project,
@@ -257,21 +258,27 @@ def main(args):
     sys.stdout.write('\nWaiting for cluster creation...')
     sys.stdout.flush()
 
+    
+    cluster_url = "https://console.cloud.google.com/dataproc/clusters/{}?project={}&region={})".format(args.name, args.project, args.region)
+    
     while True:
         result = dataproc.projects().regions().clusters().list(
             projectId=args.project,
             region=args.region).execute()
+            
         cluster_list = result['clusters']
-        cluster = [c
-                   for c in cluster_list
-                   if c['clusterName'] == args.name][0]
-        if cluster['status']['state'] == 'ERROR':
-            raise Exception(result['status']['details'])
-        elif cluster['status']['state'] == 'RUNNING':
-            print("\nCluster created (see https://console.cloud.google.com/dataproc/clusters/{}?project={}&region={})".format(args.name, args.project, args.region))
-            break
-        else:
-            time.sleep(5)
-            sys.stdout.write('...')
-            sys.stdout.flush()
+        cluster = [c for c in cluster_list if c['clusterName'] == args.name][0]
         
+        try:
+            if cluster['status']['state'] == 'ERROR':
+                raise Exception(cluster['status'])
+            elif cluster['status']['state'] == 'RUNNING':
+                print("\nCluster created.  See {} for more details.".format(cluster_url))
+                break
+            else:
+                time.sleep(5)
+                sys.stdout.write('...')
+                sys.stdout.flush()
+        except Exception as e:
+            print "Unable to provision cluster.  See {} for more details.".format(cluster_url) 
+            raise   
