@@ -155,7 +155,7 @@ optional arguments:
 
 ```
 $ cluster start -h
-usage: cluster start [-h] [--hash HASH] [--spark {2.0.2,2.1.0}]
+usage: cluster start [-h] [--hash HASH] [--spark {2.0.2,2.2.0}]
                      [--version {0.1,devel}]
                      [--master-machine-type MASTER_MACHINE_TYPE]
                      [--master-boot-disk-size MASTER_BOOT_DISK_SIZE]
@@ -180,7 +180,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --hash HASH           Hail build to use for notebook initialization
                         (default: latest).
-  --spark {2.0.2,2.1.0}
+  --spark {2.0.2,2.2.0}
                         Spark version used to build Hail (default: 2.0.2)
   --version {0.1,devel}
                         Hail version to use (default: 0.1).
@@ -222,7 +222,7 @@ optional arguments:
 
 ```
 $ cluster submit -h
-usage: cluster submit [-h] [--hash HASH] [--spark {2.0.2,2.1.0}]
+usage: cluster submit [-h] [--hash HASH] [--spark {2.0.2,2.2.0}]
                       [--version {0.1,devel}] [--jar JAR] [--zip ZIP]
                       [--properties PROPERTIES]
                       name script
@@ -237,7 +237,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --hash HASH           Hail build to use for notebook initialization
                         (default: latest).
-  --spark {2.0.2,2.1.0}
+  --spark {2.0.2,2.2.0}
                         Spark version used to build Hail (default: 2.0.2).
   --version {0.1,devel}
                         Hail version to use (default: 0.1).
