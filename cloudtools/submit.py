@@ -164,6 +164,8 @@ def main(args):
     job_url = "https://console.cloud.google.com/dataproc/jobs/{}?project={}&region={}".format(job_id, args.project, args.region)
     
     print('Submitted job ID {}.  See {} for more details.'.format(job_id, job_url))
+    
+    return job_id
 
 def wait_for_job(dataproc, project, region, job_id):
     print('Waiting for job to finish...')
