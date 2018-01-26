@@ -51,7 +51,7 @@ def main(args):
         hail_jar = args.jar.rsplit('/')[-1]
         jar_path = args.jar
         # upload this jar to the staging bucket
-        upload_blob(cluster_staging_bucket, jar_path, os.path.basename(jar_path))
+        upload_blob(cluster_staging_bucket, jar_path, os.path.basename(jar_path), args.project)
     else:
         hail_jar = 'hail-{0}-{1}-Spark-{2}.jar'.format(args.version, hash_name, args.spark)
         jar_path = 'gs://hail-common/builds/{0}/jars/{1}'.format(args.version, hail_jar)
@@ -60,7 +60,7 @@ def main(args):
     if args.zip:
         zip_path = args.zip
         # upload this zip to the staging bucket
-        upload_blob(cluster_staging_bucket, zip_path, os.path.basename(zip_path))
+        upload_blob(cluster_staging_bucket, zip_path, os.path.basename(zip_path), args.project)
     else:
         hail_zip = 'hail-{0}-{1}.zip'.format(args.version, hash_name)
         zip_path = 'gs://hail-common/builds/{0}/python/{1}'.format(args.version, hail_zip)
@@ -72,7 +72,7 @@ def main(args):
         files += ',' + args.files
         # upload each of these files to the staging bucket
         for f in args.files.split(","):
-            uploaded_file_paths.append(upload_blob(cluster_staging_bucket, f, os.path.basename(f)))
+            uploaded_file_paths.append(upload_blob(cluster_staging_bucket, f, os.path.basename(f), args.project))
 
     # create properties argument
     properties = 'spark.driver.extraClassPath=./{0},spark.executor.extraClassPath=./{0}'.format(hail_jar)
@@ -110,7 +110,7 @@ def main(args):
         
     # upload the hail script to this dataproc staging bucket
     script_name = os.path.basename(args.script)            
-    upload_blob(cluster_staging_bucket, args.script, script_name)
+    upload_blob(cluster_staging_bucket, args.script, script_name, args.project)
                            
     job_details = {
         'projectId': args.project,
@@ -181,9 +181,9 @@ def wait_for_job(dataproc, project, region, job_id):
             print('Job finished.')
             return result
 
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
+def upload_blob(bucket_name, source_file_name, destination_blob_name, project):
     """Uploads a file to the bucket."""
-    storage_client = storage.Client()
+    storage_client = storage.Client(project)
     bucket = storage_client.get_bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
 
