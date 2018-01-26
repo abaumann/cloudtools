@@ -40,7 +40,7 @@ def main(args):
     if args.hash != 'latest':
         hash_name = args.hash
     else:
-        storage_client = storage.Client()
+        storage_client = storage.Client(project=args.project)
         bucket = storage_client.get_bucket("hail-common")
         blob = bucket.blob( "latest-hash.txt" )
         # get the hash from this text file, removing any trailing newline
