@@ -271,6 +271,10 @@ def main(args):
         
         try:
             if cluster['status']['state'] == 'ERROR':
+                print(dataproc.projects().regions().clusters().get(
+                    projectId=args.project,
+                    region=args.region,
+                    name=args.name).execute())
                 raise Exception(cluster['status'])
             elif cluster['status']['state'] == 'RUNNING':
                 print("\nCluster created.  See {} for more details.".format(cluster_url))
@@ -281,4 +285,5 @@ def main(args):
                 sys.stdout.flush()
         except Exception as e:
             print "Unable to provision cluster.  See {} for more details.".format(cluster_url) 
+            print "cluster state: {}".format(cluster)
             raise   
